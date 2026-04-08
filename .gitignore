@@ -1,0 +1,7 @@
+node_modules/
+store.db
+uploads/*.jpg
+uploads/*.png
+uploads/*.jpeg
+uploads/*.webp
+.env

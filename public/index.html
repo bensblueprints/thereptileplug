@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Reptile Plug | Your Ultimate Reptile Source</title>
+  <meta name="description" content="Premium reptiles, geckos, snakes, isopods, feeders and supplies. Captive bred, ethically sourced.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=Kaushan+Script&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Loader -->
+  <div id="loader">
+    <div class="loader-content">
+      <div class="snake-icon">
+        <i class="fas fa-dragon"></i>
+      </div>
+      <h2 class="loader-title">The Reptile Plug</h2>
+      <div class="loader-bar"><div class="loader-progress"></div></div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-inner">
+      <a href="/" class="logo" data-link>
+        <span class="logo-script">The</span>
+        <span class="logo-main">Reptile Plug</span>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="/" class="nav-link active" data-link>Home</a>
+        <a href="/shop" class="nav-link" data-link>Shop</a>
+        <a href="/shop?category=snakes" class="nav-link" data-link>Snakes</a>
+        <a href="/shop?category=geckos" class="nav-link" data-link>Geckos</a>
+        <a href="/contact" class="nav-link" data-link>Contact</a>
+      </nav>
+      <div class="header-actions">
+        <button class="search-toggle" onclick="toggleSearch()"><i class="fas fa-search"></i></button>
+        <a href="/cart" class="cart-btn" data-link>
+          <i class="fas fa-shopping-cart"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </a>
+        <button class="mobile-toggle" onclick="toggleMobile()">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <div class="search-bar" id="searchBar">
+      <input type="text" placeholder="Search snakes, geckos, supplies..." id="searchInput" onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()"><i class="fas fa-search"></i></button>
+    </div>
+  </header>
+
+  <!-- Mobile Nav -->
+  <div class="mobile-nav" id="mobileNav">
+    <div class="mobile-nav-inner">
+      <a href="/" data-link onclick="closeMobile()">Home</a>
+      <a href="/shop" data-link onclick="closeMobile()">Shop All</a>
+      <a href="/shop?category=snakes" data-link onclick="closeMobile()">Snakes</a>
+      <a href="/shop?category=geckos" data-link onclick="closeMobile()">Geckos</a>
+      <a href="/shop?category=isopods" data-link onclick="closeMobile()">Isopods</a>
+      <a href="/shop?category=feeders" data-link onclick="closeMobile()">Feeders</a>
+      <a href="/shop?category=supplies" data-link onclick="closeMobile()">Supplies</a>
+      <a href="/cart" data-link onclick="closeMobile()">Cart</a>
+      <a href="/contact" data-link onclick="closeMobile()">Contact</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main id="app"></main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h3 class="footer-logo"><span class="logo-script">The</span> Reptile Plug</h3>
+        <p>Your ultimate reptile source. Captive bred, ethically sourced reptiles, amphibians, and invertebrates.</p>
+        <div class="footer-social">
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-tiktok"></i></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="/shop?category=snakes" data-link>Snakes</a>
+        <a href="/shop?category=geckos" data-link>Geckos</a>
+        <a href="/shop?category=isopods" data-link>Isopods</a>
+        <a href="/shop?category=feeders" data-link>Feeders</a>
+        <a href="/shop?category=supplies" data-link>Supplies</a>
+      </div>
+      <div class="footer-col">
+        <h4>Info</h4>
+        <a href="/contact" data-link>Contact Us</a>
+        <a href="#">Shipping Policy</a>
+        <a href="#">Live Arrival Guarantee</a>
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p><i class="fas fa-phone"></i> 562-248-6940</p>
+        <p><i class="fas fa-envelope"></i> info@thereptileplug.com</p>
+        <div class="newsletter">
+          <p>Get updates & deals:</p>
+          <form class="newsletter-form" onsubmit="event.preventDefault();this.querySelector('input').value='';alert('Subscribed!')">
+            <input type="email" placeholder="Email address" required>
+            <button type="submit"><i class="fas fa-arrow-right"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 The Reptile Plug. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
