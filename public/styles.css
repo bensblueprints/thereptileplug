@@ -42,19 +42,72 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ==================== LOADER ==================== */
 #loader {
   position: fixed; inset: 0; z-index: 10000;
-  background: var(--bg);
+  background: radial-gradient(ellipse at center, #0f1a0f 0%, #0a0a0a 70%);
   display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.6s, visibility 0.6s;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-.loader-content { text-align: center; }
-.loader-logo { width: 280px; max-width: 80vw; margin-bottom: 24px; animation: pulse 1.5s infinite; }
-.loader-bar { width: 200px; height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.loader-progress { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); animation: loadProgress 1.2s ease forwards; }
+.loader-content { text-align: center; display: flex; flex-direction: column; align-items: center; }
 
-@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.loader-logo-wrap {
+  position: relative;
+  margin-bottom: 32px;
+}
+.loader-logo-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba(46, 125, 50, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: logoGlow 2.5s ease-in-out infinite;
+  z-index: -1;
+}
+.loader-logo {
+  width: 220px;
+  max-width: 60vw;
+  filter: drop-shadow(0 0 20px rgba(46, 125, 50, 0.4)) drop-shadow(0 4px 24px rgba(0,0,0,0.6));
+  animation: logoFloat 2.5s ease-in-out infinite;
+}
+
+.loader-bar {
+  width: 240px; max-width: 60vw;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.loader-progress {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #1b5e20, #4caf50, #81c784);
+  border-radius: 3px;
+  animation: loadProgress 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+}
+
+.loader-tagline {
+  margin-top: 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  animation: tagFadeIn 1s 0.4s ease both;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes logoGlow {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
 @keyframes loadProgress { to { width: 100%; } }
+@keyframes tagFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ==================== HEADER ==================== */
 #header {
@@ -73,7 +126,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 
 .logo { display: flex; align-items: center; }
-.header-logo { height: 50px; width: auto; }
+.header-logo { height: 42px; width: auto; filter: drop-shadow(0 0 8px rgba(46, 125, 50, 0.3)); transition: filter var(--transition), transform var(--transition); }
+.logo:hover .header-logo { filter: drop-shadow(0 0 14px rgba(46, 125, 50, 0.5)); transform: scale(1.03); }
 
 .nav-links { display: flex; gap: 32px; }
 .nav-link {
@@ -652,6 +706,11 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .footer-logo {
   font-family: var(--font-heading); font-size: 24px; font-weight: 700;
   margin-bottom: 16px;
+}
+.footer-logo-img {
+  height: 60px; width: auto;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 10px rgba(46, 125, 50, 0.25));
 }
 .footer-col p { color: var(--text-dim); font-size: 14px; line-height: 1.7; }
 .footer-social { display: flex; gap: 16px; margin-top: 20px; }
