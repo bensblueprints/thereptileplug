@@ -49,8 +49,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
 .loader-content { text-align: center; }
-.snake-icon { font-size: 48px; color: var(--accent); margin-bottom: 16px; animation: pulse 1.5s infinite; }
-.loader-title { font-family: var(--font-heading); font-size: 28px; margin-bottom: 20px; }
+.loader-logo { width: 280px; max-width: 80vw; margin-bottom: 24px; animation: pulse 1.5s infinite; }
 .loader-bar { width: 200px; height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .loader-progress { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); animation: loadProgress 1.2s ease forwards; }
 
@@ -73,9 +72,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   display: flex; align-items: center; justify-content: space-between;
 }
 
-.logo { display: flex; align-items: baseline; gap: 8px; }
-.logo-script { font-family: var(--font-script); font-size: 18px; color: var(--accent); }
-.logo-main { font-family: var(--font-heading); font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+.logo { display: flex; align-items: center; }
+.header-logo { height: 50px; width: auto; }
 
 .nav-links { display: flex; gap: 32px; }
 .nav-link {
