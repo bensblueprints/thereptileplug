@@ -145,8 +145,10 @@ async function renderHome() {
   app.innerHTML = `
     <!-- HERO -->
     <section class="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-particles" id="particles"></div>
+      <video class="hero-video" autoplay muted loop playsinline>
+        <source src="/hero-bg.mp4" type="video/mp4">
+      </video>
+      <div class="hero-overlay"></div>
       <div class="hero-content">
         <div class="hero-text">
           <div class="hero-badge"><i class="fas fa-circle"></i> Now Shipping Nationwide</div>
@@ -166,9 +168,7 @@ async function renderHome() {
             <div class="stat"><div class="stat-num" data-count="100">0</div><div class="stat-label">5-Star Reviews</div></div>
           </div>
         </div>
-        <div class="hero-visual">
-          <div class="hero-glow"></div>
-        </div>
+        <div class="hero-visual"></div>
       </div>
     </section>
 
