@@ -84,6 +84,10 @@ function handleRoute() {
   else if (path === '/cart') renderCart();
   else if (path === '/checkout') renderCheckout();
   else if (path === '/contact') renderContact();
+  else if (path === '/shipping-policy') renderShippingPolicy();
+  else if (path === '/live-arrival-guarantee') renderLiveArrival();
+  else if (path === '/terms') renderTerms();
+  else if (path === '/blog') renderBlog();
   else if (path.startsWith('/order/')) renderOrderConfirm(path.split('/order/')[1]);
   else renderHome();
 }
@@ -125,8 +129,13 @@ async function updateCartCount() {
   } catch(e) {}
 }
 
+function setTitle(title) {
+  document.title = title + ' | Buy Reptiles Online | The Reptile Plug';
+}
+
 // ==================== HOME PAGE ====================
 async function renderHome() {
+  document.title = 'Buy Reptiles Online | Live Snakes, Geckos, Lizards & More | The Reptile Plug';
   const app = document.getElementById('app');
   const [categories, products] = await Promise.all([
     fetch('/api/shop/categories').then(r => r.json()),
@@ -142,11 +151,11 @@ async function renderHome() {
         <div class="hero-text">
           <div class="hero-badge"><i class="fas fa-circle"></i> Now Shipping Nationwide</div>
           <h1>
-            <span class="script">Your Ultimate</span>
-            Premium <span class="accent">Reptiles</span><br>
+            <span class="script">Buy</span>
+            <span class="accent">Reptiles</span> Online<br>
             Delivered to Your Door
           </h1>
-          <p class="hero-desc">Captive bred, ethically sourced snakes, geckos, isopods, and more. Every animal comes with our live arrival guarantee.</p>
+          <p class="hero-desc">Captive bred, ethically sourced snakes, geckos, turtles, chameleons, and more. Every animal ships with our live arrival guarantee.</p>
           <div class="hero-actions">
             <a href="/shop" class="btn btn-primary" data-link><i class="fas fa-shopping-bag"></i> Shop Now</a>
             <a href="/shop?category=snakes" class="btn btn-outline" data-link>View Snakes</a>
@@ -235,6 +244,28 @@ async function renderHome() {
         ${products.slice(8, 12).map(p => productCard(p)).join('')}
       </div>
     </section>
+
+    <!-- SEO BODY COPY -->
+    <section class="section">
+      <div class="seo-content" style="margin-top:0;">
+        <h2>Buy Reptiles Online from The Reptile Plug</h2>
+        <p>Welcome to <strong>The Reptile Plug</strong> — your trusted source to <strong>buy reptiles online</strong> with confidence. We specialize in captive bred, ethically sourced reptiles, amphibians, and invertebrates shipped safely to your door anywhere in the United States. With over <strong>300 species</strong> available including snakes, geckos, turtles, tortoises, chameleons, bearded dragons, monitors, frogs, tarantulas, and more, we carry one of the largest selections of live reptiles for sale online.</p>
+
+        <h3>Why Buy From Us?</h3>
+        <p>Every animal we sell is backed by our <strong>unconditional live arrival guarantee</strong>. We use insulated shipping boxes with temperature-controlled heat or cold packs and ship via overnight carriers to ensure your new pet arrives safe, healthy, and stress-free. Our team has decades of combined experience in reptile husbandry, and we're available to answer questions before and after your purchase.</p>
+
+        <h3>Captive Bred, Ethically Sourced</h3>
+        <p>We prioritize captive bred animals whenever possible. Captive bred reptiles are healthier, better adapted to life in captivity, and come with known genetics and feeding histories. When we do offer field-collected specimens, they are legally obtained through licensed channels and properly acclimated before being offered for sale.</p>
+
+        <h3>We Ship Nationwide</h3>
+        <p>We ship live reptiles, amphibians, and invertebrates to all 50 states via FedEx and UPS overnight services. Orders over $100 qualify for <strong>free shipping</strong>. Every shipment is carefully packed with your animal's safety as the top priority. We monitor weather conditions closely and will hold shipments during temperature extremes to protect your new pet.</p>
+
+        <h3>Expert Support</h3>
+        <p>Not sure which reptile is right for you? Our team is here to help. Whether you're a first-time keeper looking for a beginner-friendly species or an experienced breeder searching for specific genetics, we'll guide you to the perfect animal. Reach us at <strong>562-248-6940</strong> or <strong>info@thereptileplug.com</strong> — we respond to every inquiry within 24 hours.</p>
+
+        <p>Browse our categories above or use the search bar to find exactly what you're looking for. From <a href="/shop?category=snakes" data-link>ball pythons</a> and <a href="/shop?category=geckos" data-link>leopard geckos</a> to <a href="/shop?category=turtles" data-link>turtles</a>, <a href="/shop?category=chameleons" data-link>chameleons</a>, and <a href="/shop?category=tarantulas-spiders" data-link>tarantulas</a> — your next pet is just a click away.</p>
+      </div>
+    </section>
   `;
 
   animateHome();
@@ -250,7 +281,7 @@ function productCard(p) {
     <div class="product-card" onclick="navigate('/product/${p.slug}')">
       <div class="product-image">
         ${p.image
-          ? `<img src="${p.image}" alt="${p.name}" loading="lazy">`
+          ? `<img src="${p.image}" alt="${p.name}">`
           : `<div class="product-placeholder"><i class="fas ${p.category_slug === 'snakes' ? 'fa-worm' : p.category_slug === 'geckos' ? 'fa-frog' : p.category_slug === 'isopods' ? 'fa-bug' : p.category_slug === 'feeders' ? 'fa-drumstick-bite' : p.category_slug === 'supplies' ? 'fa-box-open' : 'fa-paw'}"></i></div>`
         }
         <div class="product-badges">
@@ -299,10 +330,14 @@ async function renderShop(params) {
   const activeCategory = categories.find(c => c.slug === category);
   const seoContent = catDetail?.seo_content || '';
 
+  if (activeCategory) setTitle(activeCategory.name + ' for Sale');
+  else if (search) setTitle('Search: ' + search);
+  else setTitle('Shop All Reptiles');
+
   app.innerHTML = `
     <div class="shop-hero">
-      <h1>${activeCategory ? activeCategory.name + ' for Sale' : search ? `Search: "${search}"` : 'Shop All'}</h1>
-      <p>${activeCategory ? activeCategory.description : `${products.length} products available`}</p>
+      <h1>${activeCategory ? 'Buy ' + activeCategory.name + ' Online' : search ? `Search: "${search}"` : 'Buy Reptiles Online — Shop All'}</h1>
+      <p>${activeCategory ? activeCategory.description + '. Captive bred with live arrival guarantee. Shipped overnight to your door.' : `${products.length} products available — captive bred, ethically sourced, shipped overnight.`}</p>
     </div>
     <div class="shop-filters">
       <div class="filter-tabs">
@@ -745,6 +780,184 @@ function renderContact() {
 
   gsap.from('.contact-info-card', { y: 30, opacity: 0, stagger: 0.1, duration: 0.5 });
   gsap.from('.contact-form > *', { y: 20, opacity: 0, stagger: 0.05, duration: 0.4, delay: 0.3 });
+}
+
+// ==================== SHIPPING POLICY ====================
+function renderShippingPolicy() {
+  setTitle('Shipping Policy');
+  document.getElementById('app').innerHTML = `
+    <div class="policy-page">
+      <h1>Shipping Policy</h1>
+      <div class="seo-content" style="margin-top:24px;">
+        <h2>How We Ship Live Reptiles</h2>
+        <p>At The Reptile Plug, the safety of your animal is our top priority. We've shipped thousands of live reptiles, amphibians, and invertebrates across the United States with an exceptional survival rate, and we stand behind every shipment with our <a href="/live-arrival-guarantee" data-link>live arrival guarantee</a>.</p>
+
+        <h3>Shipping Methods</h3>
+        <p>All live animals are shipped via <strong>FedEx Priority Overnight</strong> or <strong>UPS Next Day Air</strong>. We do not ship live animals via ground or economy services. Your animal will typically arrive by 10:30 AM the morning after shipment.</p>
+
+        <h3>Shipping Days</h3>
+        <p>We ship live animals <strong>Monday through Wednesday</strong> to avoid animals sitting in transit facilities over weekends. Orders placed after Wednesday will ship the following Monday unless you request Saturday delivery (additional charges apply).</p>
+
+        <h3>Packaging</h3>
+        <p>Every shipment is carefully packed in insulated shipping boxes with:</p>
+        <ul>
+          <li><strong>Insulated foam-lined boxes</strong> to maintain stable temperatures</li>
+          <li><strong>Heat packs or cold packs</strong> depending on weather conditions</li>
+          <li><strong>Secure deli cups or cloth bags</strong> appropriate to the species</li>
+          <li><strong>Cushioning material</strong> to prevent shifting during transit</li>
+          <li><strong>"LIVE ANIMAL" labels</strong> on all sides of the box</li>
+        </ul>
+
+        <h3>Shipping Costs</h3>
+        <ul>
+          <li><strong>Orders over $100:</strong> FREE overnight shipping</li>
+          <li><strong>Orders under $100:</strong> Flat rate $39.99 overnight shipping</li>
+          <li><strong>Supplies only:</strong> $7.99 standard shipping (no live animals)</li>
+        </ul>
+
+        <h3>Weather Holds</h3>
+        <p>We monitor weather conditions at both our facility and your delivery location. If temperatures at either end are below 35°F or above 100°F, we will hold your shipment until conditions are safe. We will notify you via email if a weather hold is placed on your order. Your animal's safety always comes first.</p>
+
+        <h3>Tracking</h3>
+        <p>You will receive a tracking number via email as soon as your order ships. We recommend signing up for FedEx/UPS delivery notifications so you can be home to receive your animal promptly.</p>
+
+        <h3>Upon Delivery</h3>
+        <p>When your animal arrives, open the box immediately and allow your new pet to acclimate to room temperature for 15-20 minutes before handling. Prepare their enclosure in advance so they can be moved into their new home quickly. If there are any issues with your delivery, contact us immediately at <strong>562-248-6940</strong> or <strong>info@thereptileplug.com</strong>.</p>
+
+        <h3>Ship-to Restrictions</h3>
+        <p>We ship to all 50 states. Some species may have restrictions in certain states (e.g., certain turtle species in some states). If your order contains a restricted species, we will contact you before shipping to discuss alternatives.</p>
+      </div>
+    </div>`;
+}
+
+// ==================== LIVE ARRIVAL GUARANTEE ====================
+function renderLiveArrival() {
+  setTitle('Live Arrival Guarantee');
+  document.getElementById('app').innerHTML = `
+    <div class="policy-page">
+      <h1>Live Arrival Guarantee</h1>
+      <div class="seo-content" style="margin-top:24px;">
+        <h2>Our 100% Live Arrival Guarantee</h2>
+        <p>When you buy reptiles online from The Reptile Plug, every animal is backed by our <strong>unconditional live arrival guarantee</strong>. If your animal does not arrive alive and in good health, we will replace it or issue a full refund — no questions asked.</p>
+
+        <h3>What's Covered</h3>
+        <ul>
+          <li>Dead on arrival (DOA)</li>
+          <li>Animal arrives visibly injured or in critical condition</li>
+          <li>Wrong animal shipped</li>
+          <li>Carrier delay resulting in animal death (we cover this — not your problem)</li>
+        </ul>
+
+        <h3>How to File a Claim</h3>
+        <p>If there is any issue with your delivery, you must:</p>
+        <ol>
+          <li><strong>Contact us within 2 hours</strong> of delivery confirmation</li>
+          <li><strong>Send clear photos</strong> of the animal and the packaging as received</li>
+          <li><strong>Do not discard</strong> the animal or shipping materials until we confirm your claim</li>
+        </ol>
+        <p>Contact us at <strong>562-248-6940</strong> (call or text) or <strong>info@thereptileplug.com</strong>. We respond to all DOA claims within 1 hour during business hours.</p>
+
+        <h3>Replacement or Refund</h3>
+        <p>Once your claim is confirmed, you choose: a <strong>full replacement</strong> shipped at no additional cost, or a <strong>complete refund</strong> to your original payment method. Replacements ship on the next available shipping day.</p>
+
+        <h3>Conditions</h3>
+        <ul>
+          <li>Someone must be available to accept the package on the delivery date. If the carrier attempts delivery and no one is home, and the animal is left in extreme conditions, the guarantee is void.</li>
+          <li>If we place a weather hold on your order and you request we ship anyway, the guarantee is void for weather-related issues.</li>
+          <li>The guarantee covers the animal's arrival only — it does not cover issues arising from improper husbandry after receipt.</li>
+        </ul>
+
+        <h3>Our Track Record</h3>
+        <p>We maintain a <strong>99.8% live arrival rate</strong> across all shipments. We achieve this through careful packaging, weather monitoring, and working only with overnight carriers. When you buy reptiles online from The Reptile Plug, you're buying with confidence.</p>
+      </div>
+    </div>`;
+}
+
+// ==================== TERMS ====================
+function renderTerms() {
+  setTitle('Terms & Conditions');
+  document.getElementById('app').innerHTML = `
+    <div class="policy-page">
+      <h1>Terms & Conditions</h1>
+      <div class="seo-content" style="margin-top:24px;">
+        <h2>Terms of Service</h2>
+        <p>By placing an order on buyreptilesonline.com ("The Reptile Plug"), you agree to the following terms and conditions. Please read them carefully before making a purchase.</p>
+
+        <h3>Age Requirement</h3>
+        <p>You must be at least 18 years old to purchase live animals from our website. By placing an order, you confirm that you are of legal age and that the purchase and ownership of the species you are ordering is legal in your state and local jurisdiction.</p>
+
+        <h3>Legal Compliance</h3>
+        <p>It is the buyer's responsibility to ensure that the species they are purchasing is legal to own in their state, county, and municipality. We make every effort to stay current on state regulations, but local laws vary widely. If we identify that a species is restricted in your area, we will cancel and refund that portion of your order.</p>
+
+        <h3>Animal Health</h3>
+        <p>All animals are inspected for health before shipping. However, reptiles are living creatures and we cannot guarantee the long-term health of any animal after delivery. Our <a href="/live-arrival-guarantee" data-link>live arrival guarantee</a> covers the animal's condition upon arrival only. We strongly recommend having a reptile-experienced veterinarian examine any new animal within the first week.</p>
+
+        <h3>Returns & Refunds</h3>
+        <p>Due to the nature of live animal sales, we do not accept returns. All sales are final. Refunds are only issued under our live arrival guarantee or if we are unable to fulfill your order. Supplies and non-living products may be returned within 14 days if unused and in original packaging.</p>
+
+        <h3>Pricing</h3>
+        <p>All prices are listed in US dollars. We reserve the right to change prices at any time without notice. Prices are locked in at the time of your order confirmation.</p>
+
+        <h3>Order Cancellation</h3>
+        <p>Orders may be cancelled within 2 hours of placement for a full refund. After that window, orders that have not yet shipped may be cancelled for store credit minus a 10% restocking fee. Orders that have already shipped cannot be cancelled.</p>
+
+        <h3>Privacy</h3>
+        <p>We collect only the information necessary to process your order and ship your animal. We do not sell or share your personal information with third parties. Payment processing is handled securely through Stripe.</p>
+
+        <h3>Contact</h3>
+        <p>Questions about these terms? Contact us at <strong>info@thereptileplug.com</strong> or <strong>562-248-6940</strong>.</p>
+      </div>
+    </div>`;
+}
+
+// ==================== BLOG ====================
+function renderBlog() {
+  setTitle('Reptile Care Blog');
+  document.getElementById('app').innerHTML = `
+    <div class="policy-page">
+      <h1>Reptile Care Blog</h1>
+      <p style="color:var(--text-dim);margin-bottom:48px;font-size:16px;">Care guides, species spotlights, and expert tips for reptile keepers of all levels.</p>
+      <div class="blog-grid">
+        <div class="blog-card" onclick="navigate('/shop?category=snakes')">
+          <div class="blog-icon"><i class="fas fa-worm"></i></div>
+          <h3>Ball Python Care Guide: Everything You Need to Know</h3>
+          <p>Ball pythons are the most popular pet snake in the world — and for good reason. Learn about housing, feeding, handling, morphs, and common health issues in our comprehensive guide.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+        <div class="blog-card" onclick="navigate('/shop?category=geckos')">
+          <div class="blog-icon"><i class="fas fa-frog"></i></div>
+          <h3>Leopard Gecko Morph Guide: Understanding Genetics</h3>
+          <p>From Mack Snows to Blazing Blizzards, leopard gecko morphs are endlessly fascinating. This guide breaks down the genetics behind the most popular morphs and how to breed for them.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+        <div class="blog-card" onclick="navigate('/shop?category=bearded-dragons')">
+          <div class="blog-icon"><i class="fas fa-dragon"></i></div>
+          <h3>Bearded Dragon Setup Guide: Building the Perfect Enclosure</h3>
+          <p>The right setup is everything for bearded dragons. Learn about tank size, lighting, UVB requirements, substrate options, temperature gradients, and diet for a thriving beardie.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+        <div class="blog-card" onclick="navigate('/shop?category=chameleons')">
+          <div class="blog-icon"><i class="fas fa-eye"></i></div>
+          <h3>Chameleon Care for Beginners: Veiled vs. Panther</h3>
+          <p>Chameleons are incredible but demanding pets. We compare veiled and panther chameleons and cover screen cages, dripper systems, misting, gut-loading feeders, and UVB essentials.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+        <div class="blog-card" onclick="navigate('/shop?category=turtles')">
+          <div class="blog-icon"><i class="fas fa-shield-alt"></i></div>
+          <h3>Turtle vs. Tortoise: Which Is Right for You?</h3>
+          <p>Aquatic turtles and land tortoises have completely different care requirements. Learn the key differences, space needs, diet, lifespan expectations, and which species make the best pets.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+        <div class="blog-card" onclick="navigate('/shop?category=tarantulas-spiders')">
+          <div class="blog-icon"><i class="fas fa-spider"></i></div>
+          <h3>Best Beginner Tarantulas: 5 Species Perfect for New Keepers</h3>
+          <p>Not all tarantulas are created equal. We break down the five best species for first-time tarantula owners, covering temperament, size, housing, feeding, and handling tips.</p>
+          <span class="blog-link">Read Full Guide <i class="fas fa-arrow-right"></i></span>
+        </div>
+      </div>
+    </div>`;
+
+  gsap.from('.blog-card', { y: 30, opacity: 0, stagger: 0.1, duration: 0.5 });
 }
 
 // ==================== ANIMATIONS ====================
