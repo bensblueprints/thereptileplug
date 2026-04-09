@@ -1,6 +1,18 @@
 // ==================== SPA ROUTER ====================
 let cartCount = 0;
 
+async function subscribeEmail(form) {
+  const email = form.querySelector('input').value;
+  try {
+    await fetch('/api/subscribers/subscribe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, source: 'footer' })
+    });
+    form.querySelector('input').value = '';
+    showToast('Subscribed! You\'ll get updates & deals.');
+  } catch(e) { showToast('Error subscribing'); }
+}
+
 const categoryIcons = {
   'new-restock': 'fa-fire',
   'snakes': 'fa-worm',
@@ -498,13 +510,37 @@ async function removeCartItem(productId) {
 }
 
 // ==================== CHECKOUT ====================
+let paymentConfig = null;
+
 async function renderCheckout() {
-  const items = await fetch('/api/cart').then(r => r.json());
+  const [items, config] = await Promise.all([
+    fetch('/api/cart').then(r => r.json()),
+    fetch('/api/payment/config').then(r => r.json())
+  ]);
   if (!items.length) { navigate('/cart'); return; }
+  paymentConfig = config;
 
   const subtotal = items.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
   const shipping = subtotal >= 100 ? 0 : 14.99;
   const total = subtotal + shipping;
+
+  let paymentSection = '';
+  if (config.provider === 'stripe') {
+    paymentSection = `
+      <h2 style="font-family:var(--font-heading);margin:32px 0 8px;">Payment</h2>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px;">Secure payment via Stripe</p>
+      <div id="stripe-card-element" style="background:var(--bg-input);border:1px solid var(--border);padding:16px;border-radius:var(--radius-sm);margin-bottom:8px;"></div>
+      <div id="card-errors" style="color:var(--accent);font-size:13px;margin-bottom:16px;"></div>`;
+  } else if (config.provider === 'authorizenet') {
+    paymentSection = `
+      <h2 style="font-family:var(--font-heading);margin:32px 0 8px;">Payment</h2>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px;">Secure credit card payment</p>
+      <div class="form-group"><label>Card Number *</label><input type="text" name="cardNumber" required placeholder="4111111111111111" maxlength="16"></div>
+      <div class="form-group"><label>Expiration (MM/YY) *</label><input type="text" name="expDate" required placeholder="12/25"></div>
+      <div class="form-group"><label>CVV *</label><input type="text" name="cvv" required placeholder="123" maxlength="4"></div>`;
+  } else {
+    paymentSection = `<p style="color:var(--text-dim);font-size:14px;margin-top:24px;"><i class="fas fa-info-circle"></i> We will contact you for payment after order placement.</p>`;
+  }
 
   document.getElementById('app').innerHTML = `
     <div class="cart-page">
@@ -521,46 +557,44 @@ async function renderCheckout() {
       </div>
 
       <h2 style="font-family:var(--font-heading);margin-bottom:8px;">Shipping Information</h2>
-      <p style="color:var(--text-dim);font-size:14px;margin-bottom:8px;">We will contact you for payment after order placement.</p>
 
-      <form class="checkout-form" onsubmit="submitOrder(event)">
-        <div class="form-group">
-          <label>Full Name *</label>
-          <input type="text" name="name" required placeholder="John Doe">
-        </div>
-        <div class="form-group">
-          <label>Email *</label>
-          <input type="email" name="email" required placeholder="john@example.com">
-        </div>
-        <div class="form-group">
-          <label>Phone</label>
-          <input type="tel" name="phone" placeholder="(555) 123-4567">
-        </div>
-        <div class="form-group">
-          <label>Street Address *</label>
-          <input type="text" name="address" required placeholder="123 Main St">
-        </div>
-        <div class="form-group">
-          <label>City *</label>
-          <input type="text" name="city" required placeholder="Los Angeles">
-        </div>
-        <div class="form-group">
-          <label>State *</label>
-          <input type="text" name="state" required placeholder="CA">
-        </div>
-        <div class="form-group">
-          <label>ZIP Code *</label>
-          <input type="text" name="zip" required placeholder="90001">
-        </div>
+      <form class="checkout-form" id="checkoutForm" onsubmit="submitOrder(event)">
+        <div class="form-group"><label>Full Name *</label><input type="text" name="name" required placeholder="John Doe"></div>
+        <div class="form-group"><label>Email *</label><input type="email" name="email" required placeholder="john@example.com"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" name="phone" placeholder="(555) 123-4567"></div>
+        <div class="form-group"><label>Street Address *</label><input type="text" name="address" required placeholder="123 Main St"></div>
+        <div class="form-group"><label>City *</label><input type="text" name="city" required placeholder="Los Angeles"></div>
+        <div class="form-group"><label>State *</label><input type="text" name="state" required placeholder="CA"></div>
+        <div class="form-group"><label>ZIP Code *</label><input type="text" name="zip" required placeholder="90001"></div>
         <div class="form-group"></div>
+        <div class="full-width">${paymentSection}</div>
         <div class="full-width" style="margin-top:16px;">
-          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
-            <i class="fas fa-check"></i> Place Order - $${total.toFixed(2)}
+          <button type="submit" class="btn btn-primary" id="checkoutBtn" style="width:100%;justify-content:center;">
+            <i class="fas fa-lock"></i> ${config.provider !== 'none' ? 'Pay' : 'Place Order'} - $${total.toFixed(2)}
           </button>
         </div>
+        <div id="checkoutError" class="full-width" style="color:var(--accent);font-size:13px;text-align:center;margin-top:8px;"></div>
       </form>
     </div>
   `;
+
+  // Initialize Stripe Elements if active
+  if (config.provider === 'stripe' && config.stripePublishableKey) {
+    const script = document.createElement('script');
+    script.src = 'https://js.stripe.com/v3/';
+    script.onload = () => {
+      window.stripeInstance = Stripe(config.stripePublishableKey);
+      const elements = window.stripeInstance.elements();
+      window.stripeCard = elements.create('card', {
+        style: { base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#666' } } }
+      });
+      window.stripeCard.mount('#stripe-card-element');
+      window.stripeCard.on('change', (e) => {
+        document.getElementById('card-errors').textContent = e.error ? e.error.message : '';
+      });
+    };
+    document.head.appendChild(script);
+  }
 
   gsap.from('.checkout-form .form-group', { y: 20, opacity: 0, stagger: 0.05, duration: 0.4 });
 }
@@ -569,22 +603,66 @@ async function submitOrder(e) {
   e.preventDefault();
   const form = e.target;
   const data = Object.fromEntries(new FormData(form));
+  const btn = document.getElementById('checkoutBtn');
+  const errDiv = document.getElementById('checkoutError');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  errDiv.textContent = '';
 
   try {
+    // First create the order
     const res = await fetch('/api/cart/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     const result = await res.json();
-    if (result.success) {
-      updateCartCount();
-      navigate('/order/' + result.orderNumber);
-    } else {
-      showToast(result.error || 'Error placing order');
+
+    if (!result.success) {
+      errDiv.textContent = result.error || 'Error placing order';
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Retry';
+      return;
     }
+
+    // Process payment if configured
+    if (paymentConfig.provider === 'stripe' && window.stripeInstance && window.stripeCard) {
+      // Create payment intent
+      const intentRes = await fetch('/api/payment/stripe/create-intent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: result.total, orderId: result.orderNumber })
+      });
+      const intentData = await intentRes.json();
+      if (intentData.error) { errDiv.textContent = intentData.error; btn.disabled = false; return; }
+
+      // Confirm payment
+      const { error, paymentIntent } = await window.stripeInstance.confirmCardPayment(intentData.clientSecret, {
+        payment_method: { card: window.stripeCard, billing_details: { name: data.name, email: data.email } }
+      });
+
+      if (error) { errDiv.textContent = error.message; btn.disabled = false; return; }
+
+      // Confirm on server
+      await fetch('/api/payment/stripe/confirm', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId: paymentIntent.id, orderId: result.orderNumber })
+      });
+    } else if (paymentConfig.provider === 'authorizenet') {
+      const chargeRes = await fetch('/api/payment/authorizenet/charge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: result.total, orderId: result.orderNumber,
+          cardNumber: data.cardNumber, expDate: data.expDate, cvv: data.cvv,
+          customerName: data.name, customerEmail: data.email
+        })
+      });
+      const chargeData = await chargeRes.json();
+      if (!chargeData.success) { errDiv.textContent = chargeData.error || 'Payment failed'; btn.disabled = false; return; }
+    }
+
+    updateCartCount();
+    navigate('/order/' + result.orderNumber);
   } catch(e) {
-    showToast('Error placing order');
+    errDiv.textContent = 'Error processing order. Please try again.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Retry';
   }
 }
 

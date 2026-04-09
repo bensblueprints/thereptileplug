@@ -106,7 +106,7 @@
         <p><i class="fas fa-envelope"></i> info@thereptileplug.com</p>
         <div class="newsletter">
           <p>Get updates & deals:</p>
-          <form class="newsletter-form" onsubmit="event.preventDefault();this.querySelector('input').value='';alert('Subscribed!')">
+          <form class="newsletter-form" onsubmit="event.preventDefault();subscribeEmail(this)">
             <input type="email" placeholder="Email address" required>
             <button type="submit"><i class="fas fa-arrow-right"></i></button>
           </form>

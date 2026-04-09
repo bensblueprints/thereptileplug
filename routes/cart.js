@@ -73,6 +73,19 @@ router.post('/checkout', (req, res) => {
     req.db.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?').run(item.quantity, item.productId);
   }
 
+  // Auto-subscribe customer email
+  const existingSub = req.db.prepare('SELECT id FROM subscribers WHERE email = ?').get(email.toLowerCase().trim());
+  if (!existingSub) {
+    req.db.prepare('INSERT OR IGNORE INTO subscribers (email, name, source) VALUES (?, ?, ?)').run(email.toLowerCase().trim(), name, 'checkout');
+  }
+
+  // Send order confirmation email
+  const orderRow = req.db.prepare('SELECT * FROM orders WHERE order_number = ?').get(orderNumber);
+  try {
+    const emailRouter = require('./email');
+    emailRouter.sendOrderEmail(req.db, orderRow || { order_number: orderNumber, customer_name: name, customer_email: email, items: JSON.stringify(items), subtotal, shipping_cost: shipping, total, shipping_address: address, shipping_city: city, shipping_state: state, shipping_zip: zip }).catch(() => {});
+  } catch(e) {}
+
   req.session.cart = [];
   res.json({ success: true, orderNumber, total });
 });

@@ -127,7 +127,86 @@ async function initDB() {
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT,
+      source TEXT DEFAULT 'website',
+      subscribed INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS email_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      to_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      status TEXT DEFAULT 'sent',
+      order_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS shipments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL,
+      carrier TEXT,
+      service TEXT,
+      tracking_number TEXT,
+      label_url TEXT,
+      rate_amount REAL,
+      status TEXT DEFAULT 'created',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id)
+    );
   `);
+
+  // Add payment columns to orders if not present
+  try {
+    db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'unpaid'");
+  } catch(e) {}
+  try {
+    db.exec("ALTER TABLE orders ADD COLUMN payment_id TEXT");
+  } catch(e) {}
+  try {
+    db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT");
+  } catch(e) {}
+  try {
+    db.exec("ALTER TABLE orders ADD COLUMN tracking_number TEXT");
+  } catch(e) {}
+  try {
+    db.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
+  } catch(e) {}
+
+  // Seed default settings
+  const setSetting = (key, val) => {
+    const exists = db.prepare('SELECT key FROM settings WHERE key = ?').get(key);
+    if (!exists) db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(key, val);
+  };
+  setSetting('payment_provider', 'none');
+  setSetting('stripe_publishable_key', '');
+  setSetting('stripe_secret_key', '');
+  setSetting('authorizenet_api_login', '');
+  setSetting('authorizenet_transaction_key', '');
+  setSetting('authorizenet_sandbox', '1');
+  setSetting('smtp_host', '');
+  setSetting('smtp_port', '587');
+  setSetting('smtp_user', '');
+  setSetting('smtp_pass', '');
+  setSetting('smtp_from_email', '');
+  setSetting('smtp_from_name', 'The Reptile Plug');
+  setSetting('shipping_provider', 'none');
+  setSetting('easypost_api_key', '');
+  setSetting('shipstation_api_key', '');
+  setSetting('shipstation_api_secret', '');
+  setSetting('ship_from_name', 'The Reptile Plug');
+  setSetting('ship_from_street', '');
+  setSetting('ship_from_city', '');
+  setSetting('ship_from_state', '');
+  setSetting('ship_from_zip', '');
+  setSetting('ship_from_phone', '');
+  setSetting('store_name', 'The Reptile Plug');
+  setSetting('store_url', 'https://buyreptilesonline.com');
 
   // Seed admin
   const adminExists = db.prepare('SELECT id FROM admin_users WHERE username = ?').get('admin');

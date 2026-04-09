@@ -33,6 +33,11 @@ app.use(async (req, res, next) => {
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/shop', require('./routes/shop'));
 app.use('/api/cart', require('./routes/cart'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/payment', require('./routes/payment'));
+app.use('/api/email', require('./routes/email'));
+app.use('/api/subscribers', require('./routes/subscribers'));
+app.use('/api/shipping', require('./routes/shipping'));
 
 app.get('/admin*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
