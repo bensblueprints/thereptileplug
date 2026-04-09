@@ -181,6 +181,12 @@ async function initDB() {
   try {
     db.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   } catch(e) {}
+  try {
+    db.exec("ALTER TABLE products ADD COLUMN cost_price REAL");
+  } catch(e) {}
+  try {
+    db.exec("ALTER TABLE products ADD COLUMN supplier TEXT");
+  } catch(e) {}
 
   // Seed default settings
   const setSetting = (key, val) => {
@@ -209,8 +215,10 @@ async function initDB() {
   setSetting('ship_from_state', '');
   setSetting('ship_from_zip', '');
   setSetting('ship_from_phone', '');
-  setSetting('store_name', 'The Reptile Plug');
+  setSetting('store_name', 'Buy Reptiles Online');
   setSetting('store_url', 'https://buyreptilesonline.com');
+  setSetting('sale_discount_percent', '0');
+  setSetting('min_markup_percent', '100');
 
   // Seed admin
   const adminExists = db.prepare('SELECT id FROM admin_users WHERE username = ?').get('admin');

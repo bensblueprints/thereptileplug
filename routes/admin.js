@@ -112,6 +112,62 @@ router.delete('/categories/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// Sale discount management
+router.get('/sale', requireAdmin, (req, res) => {
+  const discount = req.db.prepare("SELECT value FROM settings WHERE key = 'sale_discount_percent'").get();
+  const minMarkup = req.db.prepare("SELECT value FROM settings WHERE key = 'min_markup_percent'").get();
+  const salePercent = discount ? parseFloat(discount.value) : 0;
+  const minMarkupPercent = minMarkup ? parseFloat(minMarkup.value) : 100;
+
+  // Check which products would drop below minimum markup
+  const products = req.db.prepare('SELECT id, name, price, cost_price FROM products WHERE cost_price IS NOT NULL AND cost_price > 0').all();
+  const warnings = [];
+  for (const p of products) {
+    const salePrice = p.price * (1 - salePercent / 100);
+    const effectiveMarkup = ((salePrice - p.cost_price) / p.cost_price) * 100;
+    if (effectiveMarkup < minMarkupPercent) {
+      warnings.push({
+        id: p.id,
+        name: p.name,
+        costPrice: p.cost_price,
+        retailPrice: p.price,
+        salePrice: +salePrice.toFixed(2),
+        effectiveMarkup: +effectiveMarkup.toFixed(1),
+        minRequired: minMarkupPercent
+      });
+    }
+  }
+
+  res.json({ salePercent, minMarkupPercent, warnings, totalWarnings: warnings.length });
+});
+
+router.put('/sale', requireAdmin, (req, res) => {
+  const { sale_discount_percent, min_markup_percent } = req.body;
+  const salePercent = parseFloat(sale_discount_percent) || 0;
+  const minMarkupPercent = parseFloat(min_markup_percent) || 100;
+
+  // Validate: check how many products would fall below minimum markup
+  const products = req.db.prepare('SELECT id, name, price, cost_price FROM products WHERE cost_price IS NOT NULL AND cost_price > 0').all();
+  const violations = [];
+  for (const p of products) {
+    const salePrice = p.price * (1 - salePercent / 100);
+    const effectiveMarkup = ((salePrice - p.cost_price) / p.cost_price) * 100;
+    if (effectiveMarkup < minMarkupPercent) {
+      violations.push({ name: p.name, effectiveMarkup: +effectiveMarkup.toFixed(1) });
+    }
+  }
+
+  // Save settings
+  req.db.prepare("UPDATE settings SET value = ? WHERE key = 'sale_discount_percent'").run(String(salePercent));
+  req.db.prepare("UPDATE settings SET value = ? WHERE key = 'min_markup_percent'").run(String(minMarkupPercent));
+
+  const warning = violations.length > 0
+    ? `WARNING: ${violations.length} product(s) will drop below ${minMarkupPercent}% markup with this ${salePercent}% discount!`
+    : null;
+
+  res.json({ success: true, warning, violationCount: violations.length, violations: violations.slice(0, 20) });
+});
+
 router.get('/orders', requireAdmin, (req, res) => {
   res.json(req.db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
 });

@@ -232,6 +232,7 @@
               <a href="#" data-section="orders" onclick="showSection('orders',this)"><i class="fas fa-shopping-bag"></i> Orders</a>
               <a href="#" data-section="categories" onclick="showSection('categories',this)"><i class="fas fa-tags"></i> Categories</a>
               <a href="#" data-section="subscribers" onclick="showSection('subscribers',this)"><i class="fas fa-envelope"></i> Email List</a>
+              <a href="#" data-section="sale" onclick="showSection('sale',this)"><i class="fas fa-percent"></i> Sale / Discount</a>
               <a href="#" data-section="integrations" onclick="showSection('integrations',this)"><i class="fas fa-plug"></i> Integrations</a>
               <a href="#" data-section="settings" onclick="showSection('settings',this)"><i class="fas fa-cog"></i> Settings</a>
               <a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -260,6 +261,7 @@
         case 'orders': loadOrders(); break;
         case 'categories': loadCategories(); break;
         case 'subscribers': loadSubscribers(); break;
+        case 'sale': loadSale(); break;
         case 'integrations': loadIntegrations(); break;
         case 'settings': loadSettings(); break;
       }
@@ -757,6 +759,64 @@
       const r=await res.json();
       if(r.success){alert(`Sent to ${r.sent} subscribers (${r.failed} failed)`);closeModal();}
       else alert(r.error||'Failed');
+    }
+
+    // Sale / Discount
+    async function loadSale() {
+      const data = await fetch('/api/admin/sale').then(r => r.json());
+      const c = document.getElementById('adminContent');
+      c.innerHTML = `
+        <div class="page-header"><h1>Sale / Discount</h1></div>
+        <div class="card" style="max-width:600px;margin-bottom:24px">
+          <h3 style="margin-bottom:16px">Global Sale Discount</h3>
+          <p style="color:var(--dim);font-size:13px;margin-bottom:20px">Apply a percentage discount to all products. A warning will appear if the discount causes any product to fall below the minimum markup over wholesale cost.</p>
+          <div class="form-group" style="margin-bottom:16px">
+            <label>Sale Discount %</label>
+            <input type="number" id="salePercent" value="${data.salePercent}" min="0" max="90" step="1" style="max-width:200px">
+          </div>
+          <div class="form-group" style="margin-bottom:20px">
+            <label>Minimum Markup % (Warning Threshold)</label>
+            <input type="number" id="minMarkup" value="${data.minMarkupPercent}" min="0" max="500" step="5" style="max-width:200px">
+          </div>
+          <button class="btn btn-primary" onclick="saveSale()"><i class="fas fa-save"></i> Save Discount Settings</button>
+          <div id="saleResult" style="margin-top:16px"></div>
+        </div>
+        ${data.totalWarnings > 0 ? `
+        <div class="card" style="border-color:#f1c40f;max-width:800px">
+          <h3 style="color:#f1c40f;margin-bottom:12px"><i class="fas fa-exclamation-triangle"></i> ${data.totalWarnings} Product(s) Below Minimum Markup</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Product</th><th>Cost</th><th>Retail</th><th>Sale Price</th><th>Markup %</th></tr></thead>
+            <tbody>${data.warnings.map(w => `
+              <tr style="color:#f1c40f">
+                <td>${w.name}</td>
+                <td>$${w.costPrice.toFixed(2)}</td>
+                <td>$${w.retailPrice.toFixed(2)}</td>
+                <td>$${w.salePrice.toFixed(2)}</td>
+                <td>${w.effectiveMarkup}% <small>(min ${w.minRequired}%)</small></td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>` : data.salePercent > 0 ? '<div class="card" style="border-color:var(--green);max-width:600px"><p style="color:var(--green)"><i class="fas fa-check-circle"></i> All products are above minimum markup at current discount level.</p></div>' : ''}
+      `;
+    }
+
+    async function saveSale() {
+      const salePercent = document.getElementById('salePercent').value;
+      const minMarkup = document.getElementById('minMarkup').value;
+      const res = await fetch('/api/admin/sale', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sale_discount_percent: salePercent, min_markup_percent: minMarkup })
+      }).then(r => r.json());
+
+      const el = document.getElementById('saleResult');
+      if (res.warning) {
+        el.innerHTML = '<div style="background:rgba(241,196,15,0.1);border:1px solid #f1c40f;padding:14px;border-radius:8px;color:#f1c40f"><i class="fas fa-exclamation-triangle"></i> ' + res.warning + '</div>';
+      } else {
+        el.innerHTML = '<div style="background:rgba(46,204,113,0.1);border:1px solid var(--green);padding:14px;border-radius:8px;color:var(--green)"><i class="fas fa-check"></i> Sale settings saved successfully!</div>';
+      }
+      // Reload to update warnings table
+      setTimeout(() => loadSale(), 1500);
     }
 
     // Integrations (Payment, Email, Shipping)
