@@ -113,6 +113,35 @@ function doSearch() {
 function toggleMobile() { document.getElementById('mobileNav').classList.toggle('active'); }
 function closeMobile() { document.getElementById('mobileNav').classList.remove('active'); }
 
+function toggleMega() {
+  const menu = document.getElementById('megaMenu');
+  const trigger = document.getElementById('megaTrigger');
+  const isOpen = menu.classList.contains('open');
+  menu.classList.toggle('open');
+  trigger.classList.toggle('active');
+  if (!isOpen) {
+    // Stagger-animate the links
+    const cols = menu.querySelectorAll('.mega-col');
+    cols.forEach((col, i) => {
+      col.style.opacity = '0';
+      col.style.transform = 'translateY(12px)';
+      setTimeout(() => {
+        col.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        col.style.opacity = '1';
+        col.style.transform = 'translateY(0)';
+      }, 80 + i * 70);
+    });
+  }
+}
+function closeMega() {
+  document.getElementById('megaMenu')?.classList.remove('open');
+  document.getElementById('megaTrigger')?.classList.remove('active');
+}
+// Close mega on click outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.mega-menu') && !e.target.closest('.mega-trigger')) closeMega();
+});
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;

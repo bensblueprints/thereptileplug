@@ -33,41 +33,56 @@
       </a>
       <nav class="nav-links" id="navLinks">
         <a href="/" class="nav-link active" data-link>Home</a>
-        <a href="/shop" class="nav-link" data-link>Shop All</a>
-        <div class="nav-dropdown">
-          <button class="nav-link nav-dropdown-trigger">Snakes <i class="fas fa-chevron-down"></i></button>
-          <div class="dropdown-panel">
-            <a href="/shop?category=snakes" data-link>All Snakes</a>
-            <a href="/shop?search=ball+python" data-link>Ball Pythons</a>
-            <a href="/shop?search=boa" data-link>Boas</a>
-            <a href="/shop?search=corn+snake" data-link>Corn Snakes</a>
-            <a href="/shop?search=king+snake" data-link>King Snakes</a>
-            <a href="/shop?search=hognose" data-link>Hognose</a>
-            <a href="/shop?search=milk+snake" data-link>Milk Snakes</a>
-            <a href="/shop?search=python" data-link>Pythons</a>
-            <a href="/shop?search=rat+snake" data-link>Rat Snakes</a>
-          </div>
-        </div>
-        <div class="nav-dropdown">
-          <button class="nav-link nav-dropdown-trigger">Lizards <i class="fas fa-chevron-down"></i></button>
-          <div class="dropdown-panel">
-            <a href="/shop?category=geckos" data-link>Geckos</a>
-            <a href="/shop?category=chameleons" data-link>Chameleons</a>
-            <a href="/shop?category=skinks" data-link>Skinks</a>
-            <a href="/shop?category=lizards" data-link>Monitors & Lizards</a>
-            <a href="/shop?category=other-reptiles" data-link>Other Reptiles</a>
-          </div>
-        </div>
-        <div class="nav-dropdown">
-          <button class="nav-link nav-dropdown-trigger">More <i class="fas fa-chevron-down"></i></button>
-          <div class="dropdown-panel">
-            <a href="/shop?category=frogs-amphibians" data-link>Frogs & Amphibians</a>
-            <a href="/shop?category=turtles-tortoises" data-link>Turtles & Tortoises</a>
-            <a href="/shop?category=tarantulas-invertebrates" data-link>Tarantulas & Invertebrates</a>
-          </div>
-        </div>
+        <a href="/shop" class="nav-link" data-link>Shop</a>
+        <button class="nav-link mega-trigger" id="megaTrigger" onclick="toggleMega()">
+          Animals <i class="fas fa-chevron-down mega-arrow"></i>
+        </button>
         <a href="/contact" class="nav-link" data-link>Contact</a>
       </nav>
+      <!-- Mega Menu -->
+      <div class="mega-menu" id="megaMenu">
+        <div class="mega-inner">
+          <div class="mega-col">
+            <div class="mega-col-head"><i class="fas fa-worm"></i> Snakes</div>
+            <a href="/shop?category=snakes" data-link onclick="closeMega()">All Snakes</a>
+            <a href="/shop?search=ball+python" data-link onclick="closeMega()">Ball Pythons</a>
+            <a href="/shop?search=boa" data-link onclick="closeMega()">Boas</a>
+            <a href="/shop?search=corn+snake" data-link onclick="closeMega()">Corn Snakes</a>
+            <a href="/shop?search=king+snake" data-link onclick="closeMega()">King Snakes</a>
+            <a href="/shop?search=hognose" data-link onclick="closeMega()">Hognose</a>
+            <a href="/shop?search=milk+snake" data-link onclick="closeMega()">Milk Snakes</a>
+            <a href="/shop?search=python" data-link onclick="closeMega()">Pythons</a>
+            <a href="/shop?search=rat+snake" data-link onclick="closeMega()">Rat Snakes</a>
+          </div>
+          <div class="mega-col">
+            <div class="mega-col-head"><i class="fas fa-frog"></i> Geckos & Lizards</div>
+            <a href="/shop?category=geckos" data-link onclick="closeMega()">Geckos</a>
+            <a href="/shop?category=chameleons" data-link onclick="closeMega()">Chameleons</a>
+            <a href="/shop?category=skinks" data-link onclick="closeMega()">Skinks</a>
+            <a href="/shop?category=lizards" data-link onclick="closeMega()">Monitors & Lizards</a>
+            <a href="/shop?category=other-reptiles" data-link onclick="closeMega()">Other Reptiles</a>
+          </div>
+          <div class="mega-col">
+            <div class="mega-col-head"><i class="fas fa-spider"></i> More Animals</div>
+            <a href="/shop?category=frogs-amphibians" data-link onclick="closeMega()">Frogs & Amphibians</a>
+            <a href="/shop?category=turtles-tortoises" data-link onclick="closeMega()">Turtles & Tortoises</a>
+            <a href="/shop?category=tarantulas-invertebrates" data-link onclick="closeMega()">Tarantulas & Invertebrates</a>
+          </div>
+          <div class="mega-col mega-cta-col">
+            <div class="mega-col-head"><i class="fas fa-fire"></i> Quick Links</div>
+            <a href="/shop" data-link onclick="closeMega()" class="mega-cta-link"><i class="fas fa-th-large"></i> Browse All 237+ Animals</a>
+            <a href="/shop?sort=price_asc" data-link onclick="closeMega()" class="mega-cta-link"><i class="fas fa-tag"></i> Best Deals</a>
+            <a href="/contact" data-link onclick="closeMega()" class="mega-cta-link"><i class="fas fa-headset"></i> Expert Support</a>
+            <div class="mega-badge">
+              <i class="fas fa-shield-alt"></i>
+              <div>
+                <strong>Live Arrival Guarantee</strong>
+                <span>On every order. Period.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="header-actions">
         <button class="search-toggle" onclick="toggleSearch()"><i class="fas fa-search"></i></button>
         <a href="/cart" class="cart-btn" data-link>
