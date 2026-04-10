@@ -157,25 +157,28 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .nav-dd:hover .nav-dd-icon { transform: rotate(180deg); }
 
 .nav-dd-panel {
-  position: absolute; top: calc(100% + 18px); left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  width: 720px;
-  background: #111; border: 1px solid #1e1e1e;
-  border-radius: 16px;
+  position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: 720px; padding-top: 12px;
   opacity: 0; visibility: hidden; pointer-events: none;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 200;
+}
+.nav-dd-panel > .nav-dd-inner {
+  background: #111; border: 1px solid #1e1e1e;
+  border-radius: 16px; overflow: hidden;
   box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 1px rgba(46,125,50,0.3);
-  z-index: 200; overflow: hidden;
 }
 .nav-dd:hover .nav-dd-panel {
   opacity: 1; visibility: visible; pointer-events: auto;
   transform: translateX(-50%) translateY(0);
 }
 /* Top glow line */
-.nav-dd-panel::before {
+.nav-dd-inner::before {
   content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
   background: linear-gradient(90deg, transparent, rgba(46,125,50,0.6), transparent);
 }
+.nav-dd-inner { position: relative; }
 
 .nav-dd-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
