@@ -46,59 +46,64 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
 // Dynamic XML sitemap
 app.get('/sitemap.xml', async (req, res) => {
-  const db = await dbPromise;
-  const today = new Date().toISOString().split('T')[0];
+  try {
+    const db = await dbPromise;
+    const today = new Date().toISOString().split('T')[0];
 
-  const staticPages = [
-    { loc: '/', priority: '1.0', changefreq: 'daily' },
-    { loc: '/shop', priority: '0.9', changefreq: 'daily' },
-    { loc: '/contact', priority: '0.5', changefreq: 'monthly' },
-    { loc: '/blog', priority: '0.6', changefreq: 'weekly' },
-    { loc: '/shipping-policy', priority: '0.3', changefreq: 'monthly' },
-    { loc: '/live-arrival-guarantee', priority: '0.4', changefreq: 'monthly' },
-    { loc: '/terms', priority: '0.2', changefreq: 'yearly' },
-  ];
+    const staticPages = [
+      { loc: '/', priority: '1.0', changefreq: 'daily' },
+      { loc: '/shop', priority: '0.9', changefreq: 'daily' },
+      { loc: '/contact', priority: '0.5', changefreq: 'monthly' },
+      { loc: '/blog', priority: '0.6', changefreq: 'weekly' },
+      { loc: '/shipping-policy', priority: '0.3', changefreq: 'monthly' },
+      { loc: '/live-arrival-guarantee', priority: '0.4', changefreq: 'monthly' },
+      { loc: '/terms', priority: '0.2', changefreq: 'yearly' },
+    ];
 
-  const categories = db.prepare('SELECT slug FROM categories ORDER BY sort_order').all();
-  const products = db.prepare('SELECT slug, updated_at, created_at FROM products WHERE active = 1').all();
+    const categories = db.prepare('SELECT slug FROM categories ORDER BY sort_order').all();
+    const products = db.prepare('SELECT slug, created_at FROM products WHERE active = 1').all();
 
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 `;
 
-  for (const page of staticPages) {
-    xml += `  <url>
+    for (const page of staticPages) {
+      xml += `  <url>
     <loc>${SITE_URL}${page.loc}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>
 `;
-  }
+    }
 
-  for (const cat of categories) {
-    xml += `  <url>
+    for (const cat of categories) {
+      xml += `  <url>
     <loc>${SITE_URL}/shop?category=${cat.slug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 `;
-  }
+    }
 
-  for (const product of products) {
-    const lastmod = (product.updated_at || product.created_at || today).split('T')[0];
-    xml += `  <url>
+    for (const product of products) {
+      const lastmod = product.created_at ? product.created_at.split('T')[0].split(' ')[0] : today;
+      xml += `  <url>
     <loc>${SITE_URL}/product/${product.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 `;
-  }
+    }
 
-  xml += `</urlset>`;
-  res.header('Content-Type', 'application/xml').send(xml);
+    xml += `</urlset>`;
+    res.header('Content-Type', 'application/xml').send(xml);
+  } catch (err) {
+    console.error('Sitemap error:', err);
+    res.status(500).send('Error generating sitemap');
+  }
 });
 
 // Routes
