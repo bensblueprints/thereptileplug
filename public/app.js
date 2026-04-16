@@ -88,6 +88,8 @@ function handleRoute() {
   else if (path === '/live-arrival-guarantee') renderLiveArrival();
   else if (path === '/terms') renderTerms();
   else if (path === '/blog') renderBlog();
+  else if (path === '/guides') renderGuides();
+  else if (path.startsWith('/guide/')) renderGuide(path.split('/guide/')[1]);
   else if (path.startsWith('/order/')) renderOrderConfirm(path.split('/order/')[1]);
   else renderHome();
 }
@@ -130,13 +132,22 @@ async function updateCartCount() {
   } catch(e) {}
 }
 
-function setTitle(title) {
+function setTitle(title, desc) {
   document.title = title + ' | Buy Reptiles Online | The Reptile Plug';
+  if (desc) {
+    let meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', desc);
+  }
+  // Update canonical
+  let canon = document.querySelector('link[rel="canonical"]');
+  if (canon) canon.setAttribute('href', 'https://buyreptilesonline.com' + window.location.pathname);
 }
 
 // ==================== HOME PAGE ====================
 async function renderHome() {
-  document.title = 'Buy Reptiles Online | Live Snakes, Geckos, Lizards & More | The Reptile Plug';
+  document.title = 'Buy Reptiles Online | Live Snakes, Geckos, Lizards & More For Sale | The Reptile Plug';
+  let meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.setAttribute('content', 'Buy reptiles online with live arrival guarantee. Captive bred snakes, geckos, turtles, chameleons, tarantulas & more shipped overnight to your door. 300+ species for sale.');
   const app = document.getElementById('app');
   const [categories, products] = await Promise.all([
     fetch('/api/shop/categories').then(r => r.json()),
@@ -282,8 +293,8 @@ function productCard(p) {
     <div class="product-card" onclick="navigate('/product/${p.slug}')">
       <div class="product-image">
         ${p.image
-          ? `<img src="${p.image}" alt="${p.name}">`
-          : `<div class="product-placeholder"><i class="fas ${p.category_slug === 'snakes' ? 'fa-worm' : p.category_slug === 'geckos' ? 'fa-frog' : p.category_slug === 'isopods' ? 'fa-bug' : p.category_slug === 'feeders' ? 'fa-drumstick-bite' : p.category_slug === 'supplies' ? 'fa-box-open' : 'fa-paw'}"></i></div>`
+          ? `<img src="${p.image}" alt="${p.name} for sale - buy ${(p.category_name || 'reptiles').toLowerCase()} online at Buy Reptiles Online" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="product-placeholder" style="display:none"><i class="fas ${categoryIcons[p.category_slug] || 'fa-paw'}"></i></div>`
+          : `<div class="product-placeholder"><i class="fas ${categoryIcons[p.category_slug] || 'fa-paw'}"></i></div>`
         }
         <div class="product-badges">
           ${hasSale ? `<span class="badge badge-sale">Sale</span>` : ''}
@@ -332,9 +343,9 @@ async function renderShop(params) {
   const activeCategory = categories.find(c => c.slug === category);
   const seoContent = catDetail?.seo_content || '';
 
-  if (activeCategory) setTitle(activeCategory.name + ' for Sale');
-  else if (search) setTitle('Search: ' + search);
-  else setTitle('Shop All Reptiles');
+  if (activeCategory) setTitle('Buy ' + activeCategory.name + ' Online | ' + activeCategory.name + ' for Sale', 'Buy ' + activeCategory.name.toLowerCase() + ' online with live arrival guarantee. Captive bred ' + activeCategory.name.toLowerCase() + ' shipped overnight to your door. Browse our selection at Buy Reptiles Online.');
+  else if (search) setTitle('Search: ' + search + ' | Reptiles for Sale');
+  else setTitle('Shop All Reptiles for Sale', 'Browse 300+ captive bred reptiles for sale online. Snakes, geckos, lizards, turtles, chameleons, tarantulas & more with live arrival guarantee and overnight shipping.');
 
   app.innerHTML = `
     <div class="shop-hero">
@@ -385,6 +396,8 @@ async function renderProduct(slug) {
   try {
     const { product: p, related } = await fetch(`/api/shop/products/${slug}`).then(r => r.json());
 
+    setTitle(p.name + ' for Sale | Buy ' + (p.category_name || 'Reptiles') + ' Online', 'Buy ' + p.name + ' online for $' + p.price.toFixed(2) + '. ' + (p.description || '').substring(0, 120) + ' Live arrival guarantee. Shipped overnight.');
+
     const hasSale = p.compare_price && p.compare_price > p.price;
     const savings = hasSale ? (p.compare_price - p.price).toFixed(2) : 0;
     const stockClass = p.stock <= 0 ? 'out-stock' : p.stock <= 3 ? 'low-stock' : 'in-stock';
@@ -395,8 +408,8 @@ async function renderProduct(slug) {
         <div class="product-detail-grid">
           <div class="detail-image">
             ${p.image
-              ? `<img src="${p.image}" alt="${p.name}">`
-              : `<div class="detail-image-placeholder"><i class="fas ${p.category_slug === 'snakes' ? 'fa-worm' : p.category_slug === 'geckos' ? 'fa-frog' : 'fa-paw'}"></i></div>`
+              ? `<img src="${p.image}" alt="Buy ${p.name} online - ${p.morph ? p.morph + ' ' : ''}${(p.category_name || 'reptile').toLowerCase()} for sale with live arrival guarantee" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="detail-image-placeholder" style="display:none"><i class="fas ${categoryIcons[p.category_slug] || 'fa-paw'}"></i></div>`
+              : `<div class="detail-image-placeholder"><i class="fas ${categoryIcons[p.category_slug] || 'fa-paw'}"></i></div>`
             }
           </div>
           <div class="detail-info">
@@ -494,7 +507,10 @@ function changeQty(delta) {
 // ==================== CART ====================
 async function renderCart() {
   const app = document.getElementById('app');
-  const items = await fetch('/api/cart').then(r => r.json());
+  const [items, couponData] = await Promise.all([
+    fetch('/api/cart').then(r => r.json()),
+    fetch('/api/cart/coupon').then(r => r.json())
+  ]);
 
   if (!items.length) {
     app.innerHTML = `
@@ -511,8 +527,11 @@ async function renderCart() {
   }
 
   const subtotal = items.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
-  const shipping = subtotal >= 100 ? 0 : 14.99;
-  const total = subtotal + shipping;
+  const activeCoupon = couponData.coupon;
+  const couponDiscount = activeCoupon ? (activeCoupon.type === 'percent' ? +(subtotal * activeCoupon.value / 100).toFixed(2) : Math.min(activeCoupon.value, subtotal)) : 0;
+  const afterDiscount = Math.max(0, subtotal - couponDiscount);
+  const shipping = afterDiscount >= 100 ? 0 : 14.99;
+  const total = afterDiscount + shipping;
 
   app.innerHTML = `
     <div class="cart-page">
@@ -536,8 +555,33 @@ async function renderCart() {
         </div>
       `).join('')}
 
+      <!-- Coupon Code Section -->
+      <div style="margin-top:24px;padding:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);">
+        ${activeCoupon ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <i class="fas fa-ticket-alt" style="color:var(--accent);margin-right:8px;"></i>
+              <strong style="font-family:monospace;color:var(--accent);">${activeCoupon.code}</strong>
+              <span style="color:var(--text-muted);margin-left:8px;">
+                ${activeCoupon.type === 'percent' ? activeCoupon.value + '% off' : '$' + activeCoupon.value.toFixed(2) + ' off'}
+              </span>
+              <span style="color:#2ecc71;margin-left:8px;font-weight:600;">-$${couponDiscount.toFixed(2)}</span>
+            </div>
+            <button onclick="removeCoupon()" class="btn btn-sm" style="color:#e74c3c;border-color:#e74c3c;"><i class="fas fa-times"></i> Remove</button>
+          </div>
+        ` : `
+          <div style="display:flex;gap:10px;align-items:center;">
+            <i class="fas fa-ticket-alt" style="color:var(--text-muted);"></i>
+            <input type="text" id="couponInput" placeholder="Enter coupon code" style="flex:1;text-transform:uppercase;font-family:monospace;font-size:14px;">
+            <button onclick="applyCoupon()" class="btn btn-outline" style="white-space:nowrap;"><i class="fas fa-check"></i> Apply</button>
+          </div>
+          <div id="couponError" style="color:#e74c3c;font-size:13px;margin-top:8px;"></div>
+        `}
+      </div>
+
       <div class="cart-summary">
         <div class="cart-summary-row"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+        ${couponDiscount > 0 ? `<div class="cart-summary-row" style="color:#2ecc71;"><span>Coupon (${activeCoupon.code})</span><span>-$${couponDiscount.toFixed(2)}</span></div>` : ''}
         <div class="cart-summary-row"><span>Shipping</span><span>${shipping === 0 ? 'FREE' : '$' + shipping.toFixed(2)}</span></div>
         ${shipping > 0 ? `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Free shipping on orders over $100!</div>` : ''}
         <div class="cart-summary-row"><span>Total</span><span>$${total.toFixed(2)}</span></div>
@@ -550,6 +594,30 @@ async function renderCart() {
   `;
 
   gsap.from('.cart-item', { y: 20, opacity: 0, stagger: 0.1, duration: 0.5 });
+}
+
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  if (!code) return;
+  const errDiv = document.getElementById('couponError');
+  errDiv.textContent = '';
+  const res = await fetch('/api/cart/apply-coupon', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code })
+  }).then(r => r.json());
+  if (res.error) {
+    errDiv.textContent = res.error;
+    return;
+  }
+  showToast('Coupon applied!');
+  renderCart();
+}
+
+async function removeCoupon() {
+  await fetch('/api/cart/remove-coupon', { method: 'DELETE' });
+  showToast('Coupon removed');
+  renderCart();
 }
 
 async function addToCart(productId) {
@@ -594,16 +662,20 @@ async function removeCartItem(productId) {
 let paymentConfig = null;
 
 async function renderCheckout() {
-  const [items, config] = await Promise.all([
+  const [items, config, couponData] = await Promise.all([
     fetch('/api/cart').then(r => r.json()),
-    fetch('/api/payment/config').then(r => r.json())
+    fetch('/api/payment/config').then(r => r.json()),
+    fetch('/api/cart/coupon').then(r => r.json())
   ]);
   if (!items.length) { navigate('/cart'); return; }
   paymentConfig = config;
 
   const subtotal = items.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
-  const shipping = subtotal >= 100 ? 0 : 14.99;
-  const total = subtotal + shipping;
+  const activeCoupon = couponData.coupon;
+  const couponDiscount = activeCoupon ? (activeCoupon.type === 'percent' ? +(subtotal * activeCoupon.value / 100).toFixed(2) : Math.min(activeCoupon.value, subtotal)) : 0;
+  const afterDiscount = Math.max(0, subtotal - couponDiscount);
+  const shipping = afterDiscount >= 100 ? 0 : 14.99;
+  const total = afterDiscount + shipping;
 
   let paymentSection = '';
   if (config.provider === 'stripe') {
@@ -633,6 +705,7 @@ async function renderCheckout() {
             <span>$${(i.product.price * i.quantity).toFixed(2)}</span>
           </div>
         `).join('')}
+        ${couponDiscount > 0 ? `<div class="cart-summary-row" style="color:#2ecc71;"><span>Coupon (${activeCoupon.code})</span><span>-$${couponDiscount.toFixed(2)}</span></div>` : ''}
         <div class="cart-summary-row"><span>Shipping</span><span>${shipping === 0 ? 'FREE' : '$' + shipping.toFixed(2)}</span></div>
         <div class="cart-summary-row"><span>Total</span><span>$${total.toFixed(2)}</span></div>
       </div>
@@ -860,43 +933,85 @@ function renderShippingPolicy() {
 
 // ==================== LIVE ARRIVAL GUARANTEE ====================
 function renderLiveArrival() {
-  setTitle('Live Arrival Guarantee');
+  setTitle('Live Arrival Guarantee & DOA Refund Policy', 'Our 100% live arrival guarantee and DOA refund policy. Full replacement or refund on any animal that does not arrive alive and healthy. Clear claim process, refund timelines, and shipping conditions.');
   document.getElementById('app').innerHTML = `
     <div class="policy-page">
-      <h1>Live Arrival Guarantee</h1>
+      <h1>Live Arrival Guarantee &amp; DOA Refund Policy</h1>
+      <p style="opacity:.75;margin-top:4px;"><em>Last updated: April 17, 2026</em></p>
+
       <div class="seo-content" style="margin-top:24px;">
         <h2>Our 100% Live Arrival Guarantee</h2>
-        <p>When you buy reptiles online from The Reptile Plug, every animal is backed by our <strong>unconditional live arrival guarantee</strong>. If your animal does not arrive alive and in good health, we will replace it or issue a full refund — no questions asked.</p>
+        <p>When you buy reptiles online from The Reptile Plug (buyreptilesonline.com), every animal is backed by our <strong>unconditional live arrival guarantee</strong>. If your animal does not arrive alive and in good health, we will replace it or issue a full refund to your original payment method — no questions asked, provided the claim steps below are followed.</p>
 
         <h3>What's Covered</h3>
         <ul>
-          <li>Dead on arrival (DOA)</li>
-          <li>Animal arrives visibly injured or in critical condition</li>
-          <li>Wrong animal shipped</li>
-          <li>Carrier delay resulting in animal death (we cover this — not your problem)</li>
+          <li><strong>Dead on arrival (DOA)</strong> — any animal that is deceased when the package is opened.</li>
+          <li>Animal arrives visibly injured or in critical/moribund condition.</li>
+          <li>Wrong species, morph, or sex shipped.</li>
+          <li>Carrier delay (lost package, missed overnight delivery) resulting in animal death — we cover this, not the customer.</li>
+          <li>Damage caused by packaging failure on our end.</li>
         </ul>
 
-        <h3>How to File a Claim</h3>
-        <p>If there is any issue with your delivery, you must:</p>
+        <h3>How to File a DOA Claim</h3>
+        <p>To qualify for replacement or refund, you <strong>must</strong> complete all of the following:</p>
         <ol>
-          <li><strong>Contact us within 2 hours</strong> of delivery confirmation</li>
-          <li><strong>Send clear photos</strong> of the animal and the packaging as received</li>
-          <li><strong>Do not discard</strong> the animal or shipping materials until we confirm your claim</li>
+          <li><strong>Contact us within 2 hours of delivery</strong> (per carrier timestamp) by phone, text, or email. Claims filed after 2 hours cannot be honored — this window is industry standard and protects both parties.</li>
+          <li><strong>Send clear, well-lit photos</strong> of: (a) the animal in the condition received, (b) the inside of the shipping box, (c) the heat/cold pack, and (d) the shipping label.</li>
+          <li><strong>Do not discard</strong> the animal, heat pack, insulation, or shipping box until your claim is resolved. We may ask for additional photos.</li>
+          <li>If requested, return the animal via prepaid label we provide.</li>
         </ol>
-        <p>Contact us at <strong>562-248-6940</strong> (call or text) or <strong>info@thereptileplug.com</strong>. We respond to all DOA claims within 1 hour during business hours.</p>
+        <p><strong>Contact:</strong> <a href="tel:5622486940">562-248-6940</a> (call or text) &nbsp;|&nbsp; <a href="mailto:info@thereptileplug.com">info@thereptileplug.com</a><br>
+        We respond to all DOA claims within 1 hour during business hours (Mon–Fri 9am–6pm PT), and within 12 hours otherwise.</p>
 
-        <h3>Replacement or Refund</h3>
-        <p>Once your claim is confirmed, you choose: a <strong>full replacement</strong> shipped at no additional cost, or a <strong>complete refund</strong> to your original payment method. Replacements ship on the next available shipping day.</p>
-
-        <h3>Conditions</h3>
+        <h3>Replacement or Refund — Your Choice</h3>
+        <p>Once your claim is confirmed, you choose one of the following:</p>
         <ul>
-          <li>Someone must be available to accept the package on the delivery date. If the carrier attempts delivery and no one is home, and the animal is left in extreme conditions, the guarantee is void.</li>
-          <li>If we place a weather hold on your order and you request we ship anyway, the guarantee is void for weather-related issues.</li>
-          <li>The guarantee covers the animal's arrival only — it does not cover issues arising from improper husbandry after receipt.</li>
+          <li><strong>Full replacement</strong> — same species/morph shipped at no additional cost (including free shipping) on the next available ship day, subject to availability. If the exact animal is unavailable, we will offer a comparable substitute or a refund.</li>
+          <li><strong>Complete refund</strong> — full refund of the animal price plus original shipping, issued to the original payment method.</li>
         </ul>
+        <p><strong>Refund processing time:</strong> Approved refunds are issued via Stripe within <strong>1–2 business days</strong> of claim approval. Funds typically appear on your card or bank statement within <strong>5–10 business days</strong>, depending on your card issuer. We will email you a confirmation with the Stripe refund reference when processed.</p>
+
+        <h3>Shipping Conditions &amp; Customer Responsibilities</h3>
+        <p>Because we ship live animals, our guarantee requires the following from the buyer:</p>
+        <ul>
+          <li><strong>Signature on delivery:</strong> All live animal shipments require an adult (18+) signature. The package cannot be left unattended.</li>
+          <li><strong>Be available on the delivery date.</strong> You will receive tracking before the shipment arrives. If the carrier attempts delivery and no one is available, and the animal is left exposed or returned to sender due to failed delivery, the guarantee is void.</li>
+          <li><strong>Pick up held packages same-day.</strong> If your package is held at a carrier facility (e.g., UPS, FedEx), you must pick it up the same day it arrives. Animals left overnight at a carrier facility are not covered.</li>
+          <li><strong>Open and inspect within 1 hour of delivery.</strong> The 2-hour claim window starts at the carrier's delivery timestamp, not when you get home.</li>
+          <li><strong>Accurate shipping address.</strong> Guarantee is void if the address provided at checkout is incorrect, incomplete, or undeliverable.</li>
+        </ul>
+
+        <h3>Weather Holds</h3>
+        <p>For the safety of the animal, we place a <strong>weather hold</strong> on any shipment where origin, destination, or transit temperatures fall outside safe thresholds (generally below 35°F or above 90°F). You will be notified by email. Options:</p>
+        <ul>
+          <li>Wait for weather to clear — no additional charge, guarantee remains in full effect.</li>
+          <li>Request we ship anyway — in writing, with acknowledgment that the live arrival guarantee is <strong>void for temperature-related loss</strong>.</li>
+          <li>Cancel the order — full refund to your original payment method.</li>
+        </ul>
+
+        <h3>Exclusions</h3>
+        <p>Our live arrival guarantee does <strong>not</strong> cover:</p>
+        <ul>
+          <li>Animal deaths or health issues occurring more than 2 hours after delivery.</li>
+          <li>Issues arising from improper husbandry, enclosure setup, feeding, or handling after receipt.</li>
+          <li>Shipments where the buyer waived the weather hold, missed delivery, or delayed pickup.</li>
+          <li>Species that are illegal to own or ship in the buyer's state/county/city — it is the buyer's responsibility to verify local legality before ordering.</li>
+          <li>Stress, refusal to feed, or behavioral issues during the acclimation period (typically 1–2 weeks).</li>
+        </ul>
+
+        <h3>Non-Living Products (Supplies, Feeders, Equipment)</h3>
+        <p>Non-living items may be returned within <strong>14 days</strong> of delivery if unused and in original packaging. Frozen feeders and live insects are final sale.</p>
+
+        <h3>Dispute Resolution — Please Contact Us First</h3>
+        <p>We stand behind every shipment and resolve the overwhelming majority of DOA claims within 24 hours. <strong>Before initiating a chargeback or payment dispute, please contact us</strong> at <a href="mailto:info@thereptileplug.com">info@thereptileplug.com</a> or <a href="tel:5622486940">562-248-6940</a>. We will work with you in good faith to resolve any issue. Chargebacks filed without first contacting us may delay your refund.</p>
 
         <h3>Our Track Record</h3>
-        <p>We maintain a <strong>99.8% live arrival rate</strong> across all shipments. We achieve this through careful packaging, weather monitoring, and working only with overnight carriers. When you buy reptiles online from The Reptile Plug, you're buying with confidence.</p>
+        <p>We maintain a <strong>99.8% live arrival rate</strong> across all shipments. We achieve this through insulated shipping boxes, temperature-controlled heat or cold packs, weather monitoring, overnight-only carriers (UPS Next Day Air / FedEx Priority Overnight), and careful pre-ship health inspections. When you buy reptiles online from The Reptile Plug, you're buying with confidence.</p>
+
+        <h3>Payment &amp; Security</h3>
+        <p>All payments are processed securely through <strong>Stripe</strong>. We do not store your card details on our servers. Refunds are issued to the same card used for purchase.</p>
+
+        <p style="margin-top:32px;opacity:.7;font-size:14px;">The Reptile Plug &mdash; buyreptilesonline.com &mdash; info@thereptileplug.com &mdash; 562-248-6940</p>
       </div>
     </div>`;
 }
@@ -936,6 +1051,160 @@ function renderTerms() {
         <p>Questions about these terms? Contact us at <strong>info@thereptileplug.com</strong> or <strong>562-248-6940</strong>.</p>
       </div>
     </div>`;
+}
+
+// ==================== CARE GUIDES ====================
+const guideIcons = {
+  'snakes': 'fa-worm', 'geckos': 'fa-frog', 'frogs-toads': 'fa-frog', 'turtles': 'fa-turtle',
+  'tarantulas-spiders': 'fa-spider', 'tortoises': 'fa-shield-alt', 'chameleons': 'fa-eye',
+  'monitors-tegus': 'fa-dragon', 'other-lizards-iguanas': 'fa-leaf', 'salamanders-newts': 'fa-water',
+  'feeders': 'fa-drumstick-bite', 'supplies': 'fa-box-open', 'insects-invertebrates': 'fa-bug',
+  'bearded-dragons': 'fa-dragon', 'agamas-water-dragons': 'fa-dragon', 'uromastyx': 'fa-sun',
+  'isopods': 'fa-bug', 'scorpions': 'fa-skull', 'skinks': 'fa-paw'
+};
+
+async function renderGuides() {
+  setTitle('Free Reptile Care Guides | Snake, Gecko, Lizard & More Care Sheets', 'Free expert care guides for snakes, geckos, bearded dragons, chameleons, turtles, tarantulas & more. 5,000+ word guides covering setup, feeding, health & breeding.');
+  const guides = await fetch('/api/guides').then(r => r.json());
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="guides-page">
+      <div class="guides-hero">
+        <div class="guides-hero-bg"></div>
+        <h1>Free Reptile Care Guides</h1>
+        <p>Comprehensive, expert-written care guides for every type of reptile, amphibian, and invertebrate. Subscribe with your email to unlock full access.</p>
+      </div>
+      <div class="guides-grid">
+        ${guides.map(g => `
+          <div class="guide-card" onclick="navigate('/guide/${g.slug}')">
+            <div class="guide-card-icon"><i class="fas ${guideIcons[g.category_slug] || 'fa-book'}"></i></div>
+            <div class="guide-card-body">
+              <h3>${g.title}</h3>
+              <p>${g.description}</p>
+              <div class="guide-card-meta">
+                <span><i class="fas fa-clock"></i> ~20 min read</span>
+                <span><i class="fas fa-file-alt"></i> 5,000+ words</span>
+              </div>
+              <span class="guide-card-cta">Read Guide <i class="fas fa-arrow-right"></i></span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  gsap.from('.guides-hero h1', { y: 30, opacity: 0, duration: 0.7 });
+  gsap.from('.guides-hero p', { y: 20, opacity: 0, duration: 0.6, delay: 0.2 });
+  gsap.utils.toArray('.guide-card').forEach((card, i) => {
+    gsap.from(card, {
+      scrollTrigger: { trigger: card, start: 'top 90%' },
+      y: 30, opacity: 0, duration: 0.5, delay: i * 0.05
+    });
+  });
+}
+
+async function renderGuide(slug) {
+  const app = document.getElementById('app');
+
+  const [preview, status] = await Promise.all([
+    fetch('/api/guides/' + slug + '/preview').then(r => r.json()).catch(() => null),
+    fetch('/api/guides/' + slug + '/status').then(r => r.json()).catch(() => ({ unlocked: false }))
+  ]);
+
+  if (!preview) {
+    app.innerHTML = '<div class="cart-empty" style="padding-top:200px;"><h2>Guide not found</h2><a href="/guides" class="btn btn-primary" data-link style="margin-top:20px;">All Guides</a></div>';
+    return;
+  }
+
+  setTitle(preview.meta_title || preview.title, preview.meta_description || preview.description);
+
+  const isUnlocked = status.unlocked;
+  const fullContent = isUnlocked ? status.full_content : '';
+
+  app.innerHTML = `
+    <div class="guide-page">
+      <div class="guide-header">
+        <a href="/guides" data-link class="guide-back"><i class="fas fa-arrow-left"></i> All Care Guides</a>
+        <div class="guide-header-icon"><i class="fas ${guideIcons[preview.category_slug] || 'fa-book'}"></i></div>
+        <h1>${preview.title}</h1>
+        <p class="guide-header-desc">${preview.description}</p>
+        <div class="guide-header-meta">
+          <span><i class="fas fa-clock"></i> ~20 min read</span>
+          <span><i class="fas fa-file-alt"></i> 5,000+ words</span>
+          <span><i class="fas fa-check-circle"></i> Expert written</span>
+        </div>
+      </div>
+      <div class="guide-body">
+        <div class="guide-preview-content">${preview.preview_content}</div>
+        ${isUnlocked ? `
+          <div class="guide-full-content">${fullContent}</div>
+        ` : `
+          <div class="guide-gate-wrapper">
+            <div class="guide-blurred-teaser">
+              <p>This comprehensive guide covers habitat setup, temperature and humidity requirements, feeding schedules, health monitoring, breeding considerations, and expert tips accumulated over decades of keeping experience. You'll learn everything from selecting your first animal to advanced husbandry techniques that ensure a long, healthy life for your pet...</p>
+              <p>Our detailed care sheets include specific product recommendations, emergency health protocols, seasonal care adjustments, and common mistakes to avoid. Whether you're a first-time keeper or an experienced breeder, this guide has something valuable for you...</p>
+              <p>Continue reading to discover the complete feeding chart with prey size recommendations by age, the ideal enclosure dimensions for each life stage, substrate comparisons with pros and cons, and our veterinarian-reviewed health checklist...</p>
+            </div>
+            <div class="guide-gate">
+              <div class="guide-gate-inner">
+                <div class="guide-gate-icon"><i class="fas fa-lock"></i></div>
+                <h2>Unlock This Free Guide</h2>
+                <p>Enter your email to get instant access to the full ${preview.title}. You'll also receive care tips, restock alerts, and exclusive deals.</p>
+                <form class="guide-gate-form" onsubmit="event.preventDefault();unlockGuide('${slug}', this)">
+                  <input type="email" placeholder="Enter your email address" required id="guideEmailInput">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-unlock"></i> Unlock Full Guide</button>
+                </form>
+                <p class="guide-gate-privacy"><i class="fas fa-shield-alt"></i> We respect your privacy. Unsubscribe anytime.</p>
+              </div>
+            </div>
+          </div>
+        `}
+      </div>
+      <div class="guide-shop-cta">
+        <h3>Ready to get started?</h3>
+        <p>Browse our selection of captive-bred animals with live arrival guarantee.</p>
+        <a href="/shop${preview.category_slug ? '?category=' + preview.category_slug : ''}" class="btn btn-primary" data-link><i class="fas fa-shopping-bag"></i> Shop ${preview.title.replace('Complete ', '').replace(' Care Guide', '').replace(' Guide', '')}</a>
+      </div>
+    </div>
+  `;
+
+  gsap.from('.guide-header', { y: 30, opacity: 0, duration: 0.7 });
+  gsap.from('.guide-preview-content', { y: 20, opacity: 0, duration: 0.6, delay: 0.3 });
+  if (!isUnlocked) {
+    gsap.from('.guide-gate-inner', { y: 30, opacity: 0, duration: 0.7, delay: 0.5 });
+  }
+}
+
+async function unlockGuide(slug, form) {
+  const email = form.querySelector('input').value.trim();
+  if (!email) return;
+
+  const btn = form.querySelector('button');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Unlocking...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/guides/' + slug + '/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Guide unlocked! Enjoy your free care guide.');
+      // Re-render the page with full content
+      renderGuide(slug);
+    } else {
+      showToast(data.error || 'Error unlocking guide');
+      btn.innerHTML = '<i class="fas fa-unlock"></i> Unlock Full Guide';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    showToast('Error unlocking guide. Please try again.');
+    btn.innerHTML = '<i class="fas fa-unlock"></i> Unlock Full Guide';
+    btn.disabled = false;
+  }
 }
 
 // ==================== BLOG ====================
